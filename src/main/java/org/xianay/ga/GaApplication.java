@@ -24,15 +24,21 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class GaApplication {
 
 	static class Visualization {
-		XYSeries series1 = new XYSeries("bast eval");
-		XYSeries series2 = new XYSeries("mean eval");
-        XYSeriesCollection dataset = new XYSeriesCollection();
-		{
+		XYSeries series1;
+		XYSeries series2;
+        XYSeriesCollection dataset;
+		JFreeChart chart;
+		ChartPanel chartPanel;
+		JFrame frame;
+
+		public Visualization(String title) {
+			dataset = new XYSeriesCollection();
+			series1 = new XYSeries("bast eval");
+			series2 = new XYSeries("mean eval");
 			dataset.addSeries(series1);
 			dataset.addSeries(series2);
-		}
-		JFreeChart chart = ChartFactory.createScatterPlot(
-				"genetic algorithm visualization",
+			chart = ChartFactory.createScatterPlot(
+				title,
 				"iteration times",          // x axis label
 				"fitness evaluation",       // y axis label
 				dataset,
@@ -40,11 +46,9 @@ public class GaApplication {
 				true,
 				true,
 				false);
-		ChartPanel chartPanel = new ChartPanel(chart);
-		JFrame frame = new JFrame("genetic algorithm visualization");
-
-		public Visualization() {
+			chartPanel = new ChartPanel(chart);
 			//chartPanel.setPreferredSize(new Dimension(500, 300));
+			frame = new JFrame(title);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.getContentPane().add(chartPanel);
 			frame.pack();
@@ -68,29 +72,21 @@ public class GaApplication {
 
 	public static void main(String[] args) {
 
-		// objective function question 4 solution min f(x) = 0.0 , n = 10, vactor x(n) = [0,0,0,0,0,0,0,0,0,0]
-		FitnessFcn objectiveFcn = (x) -> {
-			/** -20*exp(-0.2*sqrt(sum(x.^2)/n)) - exp(sum(cos(2*pi*x))/n) + 20 + e; */
-			double sum = Arrays.stream(x).reduce(0, (current, val) -> current + Math.pow(val, 2));
-			double sum2 = Arrays.stream(x).reduce(0, (current, val) -> current + Math.cos(2 * Math.PI * val));
-			double n = x.length;
-			return -20 * Math.exp(-0.2 * Math.sqrt(sum / n)) - Math.exp(sum2 / n) + 20 + Math.E;
-		};
-		// objective function question 3 solution max f(x) , n = 2, vactor x(n) = [0,0]
-		FitnessFcn objFitnessFcn2 = (x) -> {
-			//** 21.5 + x[1]*sin(4*pi*x[1]) + x[2]*sin(20*pi*x[2]); */
-			return 21.5 + x[0] * Math.sin(4 * Math.PI * x[0]) + x[1] * Math.sin(20 * Math.PI * x[1]);
-		};
 
 		
-		question3(objFitnessFcn2);
-		question4(objectiveFcn);
+		question3();
+		question4();
 	}
 
 
-	private static void question3(FitnessFcn objFitnessFcn) {
+	private static void question3() {
+		// objective function  max f(x) 
+		FitnessFcn objectiveFcn = (x) -> {
+			//** 21.5 + x[1]*sin(4*pi*x[1]) + x[2]*sin(20*pi*x[2]); */
+			return 21.5 + x[0] * Math.sin(4 * Math.PI * x[0]) + x[1] * Math.sin(20 * Math.PI * x[1]);
+		};
 		FitnessFcn fitnessFcn = (x) -> {
-			return objFitnessFcn.evaluate(x);
+			return objectiveFcn.evaluate(x);
 		};
 		int accuracy = 8;
 		int dimension = 2;
@@ -102,22 +98,30 @@ public class GaApplication {
 		double crossRate = 0.8;
 		double mutationRate = 0.01;
 		long starttime = System.currentTimeMillis();
-		Map<?, ?> result = ga(accuracy, fitnessFcn, dimension, lb, ub, populationSize, maxGenerations, new SelectionRoulette(), new CrossoverSinglePoint(crossRate), new MutationAdaptFeasible(mutationRate), new Visualization());
+		Map<?, ?> result = ga(accuracy, fitnessFcn, dimension, lb, ub, populationSize, maxGenerations,
+		new SelectionRoulette(),
+		new CrossoverSinglePoint(crossRate), 
+		new MutationAdaptFeasible(mutationRate), 
+		new Visualization("question3"));
 		long endtime = System.currentTimeMillis();
 		System.out.println("result = " + result);
 		System.out.println("time = " + (endtime - starttime) + "ms");
 	}
 
 
-	private static void question4(FitnessFcn objectiveFcn) {
-		// fitness function more fit individual has higher fitness value
-		FitnessFcn fitnessFcn = (x) -> {
-			return 1 / objectiveFcn.evaluate(x);
+	private static void question4() {
+		// objective function min f(x)
+		FitnessFcn objectiveFcn = (x) -> {
+			/** -20*exp(-0.2*sqrt(sum(x.^2)/n)) - exp(sum(cos(2*pi*x))/n) + 20 + e; */
+			double sum = Arrays.stream(x).map(e -> e * e).sum();
+			double sum2 = Arrays.stream(x).map(e -> Math.cos(2 * Math.PI * e)).sum();
+			double n = x.length;
+			return -20 * Math.exp(-0.2 * Math.sqrt(sum / n)) - Math.exp(sum2 / n) + 20 + Math.E;
 		};
-		//test objective function
-		//Gene individual = {1,2,3};
-		//System.out.println("test = " + objectiveFcn.evaluate(individual)); //correct answer is 7.016454
-		int accuracy = 4;
+		FitnessFcn fitnessFcn = (x) -> {
+			return - objectiveFcn.evaluate(x);
+		};
+		int accuracy = 6;
 		int dimension = 10;
 		int weight = dimension * 9;
 		int populationSize = (int)(weight * 0.4) * dimension;
@@ -127,7 +131,11 @@ public class GaApplication {
 		double crossRate = 0.8;
 		double mutationRate = 0.01;
 		long starttime = System.currentTimeMillis();
-		Map<?, ?> result = ga(accuracy, fitnessFcn, dimension, lb, ub, populationSize, maxGenerations, new SelectionRoulette(), new CrossoverSinglePoint(crossRate), new MutationAdaptFeasible(mutationRate), new Visualization());
+	Map<?, ?> result = ga(accuracy, fitnessFcn, dimension, lb, ub, populationSize, maxGenerations,
+		new SelectionRoulette(),
+		new CrossoverSinglePoint(crossRate), 
+		new MutationAdaptFeasible(mutationRate), 
+		new Visualization("question4"));
 		long endtime = System.currentTimeMillis();
 		System.out.println("result = " + result);
 		System.out.println("time = " + (endtime - starttime) + "ms");
@@ -151,8 +159,9 @@ public class GaApplication {
 	 */
 	public static Map<String, Object> ga(int accuracy, FitnessFcn fitnessFcn, int dimension, double[] lb, double[] ub, int populationSize, int maxGenerations, SelectionFcn selectionFcn, CrossoverFcn crossoverFcn, MutationFcn mutationFcn, Visualization visualization) {
 		Map<String, Object> result = new LinkedHashMap<>();
-		// Initial population
+		// initial population
 		List<double[]> population = initPopulation(dimension, lb, ub, populationSize);
+		// calculate binary code length and increment
 		int[] binaryCodeLength = IntStream.range(0, dimension)
 		.map((i) -> (int)Math.round(log2((ub[i] - lb[i]) / (1.0 / Math.pow(10, accuracy))))).toArray(); 
 		double[] increment = IntStream.range(0, dimension)
@@ -184,10 +193,9 @@ public class GaApplication {
 			//update best and bestEval
 			best = population.get(0);
 			bestEval = fitnessFcn.evaluate(best);
-			meanEval = evals.parallelStream().reduce(0.0, (current, val) -> current + val) / evals.size();
+			meanEval = evals.parallelStream().mapToDouble(Double::doubleValue).sum() / evals.size();
 			System.out.println("it["+(i+1)+"]" + " bestEval: " + bestEval + " meanEval: " + meanEval + " best: " + Arrays.toString(best));
 			visualization.update(bestEval, meanEval, i+1);
-			if(bestEval > 300) break; // if bestEval > 300 then break
 		}
 		result.put("bestEval", bestEval);
 		result.put("meanEval", meanEval);

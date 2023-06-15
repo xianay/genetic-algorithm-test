@@ -12,7 +12,7 @@
 	<artifactId>ga</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>ga</name>
-	<description>yi chuan suan fa</description>
+	<description>simple genetic algorithm</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
@@ -44,7 +44,6 @@
 						<manifest>
 							<mainClass>org.xianay.ga.GaApplication</mainClass>
 							<addClasspath>true</addClasspath>
-							<!-- 注意编译后要修改lib名称 -->
 							<classpathPrefix>lib/</classpathPrefix>
 						</manifest>
 					</archive>
